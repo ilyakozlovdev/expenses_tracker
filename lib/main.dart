@@ -1,117 +1,165 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import './widgets/new_transaction.dart';
+import './widgets/transaction_list.dart';
+import './widgets/chart.dart';
+import './models/transaction.dart';
 
 void main() {
+  WidgetsFlutterBinding();
+  // SystemChrome.setPreferredOrientations(
+  //     [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+        home: HomePage(),
+        title: 'My Expenses',
+        theme: ThemeData(
+            primarySwatch: Colors.amber,
+            accentColor: Colors.amberAccent,
+            textTheme: TextTheme(
+                subtitle1: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
+                subtitle2: TextStyle(
+                  color: Colors.grey,
+                  fontWeight: FontWeight.normal,
+                )),
+            iconTheme: IconThemeData(
+              color: Colors.white,
+            )));
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class HomePage extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _HomePageState extends State<HomePage> {
+  final titleContoller = TextEditingController();
+  final amountContoller = TextEditingController();
 
-  void _incrementCounter() {
+  void _startAddNewTransaction(BuildContext ctx) {
+    showModalBottomSheet(
+        context: ctx,
+        builder: (_) {
+          return GestureDetector(
+            child: NewTransaction(_addNewTransaction),
+            onTap: () => null,
+            behavior: HitTestBehavior.opaque,
+          );
+        });
+  }
+
+  final List<Transaction> _userTransactions = [
+    Transaction(
+        id: 't0', title: 'OnePlus 8T', amount: 672.99, date: DateTime.now()),
+    Transaction(
+        id: 't1',
+        title: 'Apple iPad Pro',
+        amount: 999.99,
+        date: DateTime.now()),
+    Transaction(
+        id: 't2',
+        title: 'Google Pixel 5',
+        amount: 782.99,
+        date: DateTime.now()),
+  ];
+
+  void _addNewTransaction(
+      {@required String title,
+      @required double amount,
+      @required DateTime date}) {
+    final newTransaction = Transaction(
+        id: 't${_userTransactions.length}',
+        title: title,
+        amount: amount,
+        date: date);
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _userTransactions.add(newTransaction);
     });
+  }
+
+  void _deleteTransaction(id) {
+    setState(() {
+      _userTransactions.removeWhere((element) => element.id == id);
+    });
+  }
+
+  List<Transaction> get _recentTransactions {
+    return _userTransactions
+        .where((element) =>
+            element.date.isAfter(DateTime.now().subtract(Duration(days: 7))))
+        .toList();
+  }
+
+  double get totalSpendings {
+    return _recentTransactions.fold(
+        0.0, (previousValue, element) => previousValue + element.amount);
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+    final mediaQeury = MediaQuery.of(context);
+    final isLanscape = mediaQeury.orientation == Orientation.landscape;
+
+    final appBar = AppBar(
+      title: Text(
+        'My Expenses',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.white),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      elevation: 5,
+      centerTitle: true,
+      backgroundColor: Colors.black,
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => _startAddNewTransaction(context),
+          color: Theme.of(context).iconTheme.color,
+        ),
+      ],
+    );
+
+    var availableSpace = mediaQeury.size.height -
+        appBar.preferredSize.height -
+        mediaQeury.padding.top;
+    return Scaffold(
+      appBar: appBar,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _startAddNewTransaction(context),
+        child: Icon(
+          Icons.add,
+          color: Theme.of(context).iconTheme.color,
+        ),
+      ),
+      body: SingleChildScrollView(
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
+            Container(
+              height: isLanscape ? availableSpace * 0.5 : availableSpace * 0.25,
+              child: Chart(
+                recentTransactions: _userTransactions,
+                totalSpendings: totalSpendings,
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            Container(
+              height: isLanscape ? availableSpace * 0.5 : availableSpace * 0.75,
+              child: TransactionList(
+                  transactions: _userTransactions,
+                  deleteTransatcion: _deleteTransaction),
+            )
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
