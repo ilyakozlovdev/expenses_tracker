@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import './widgets/new_transaction.dart';
-import './models/transaction.dart';
 import './widgets/transaction_list.dart';
+import './widgets/chart.dart';
+import './models/transaction.dart';
 
 void main() {
+  WidgetsFlutterBinding();
+  // SystemChrome.setPreferredOrientations(
+  //     [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   runApp(MyApp());
 }
 
@@ -15,6 +20,7 @@ class MyApp extends StatelessWidget {
         title: 'My Expenses',
         theme: ThemeData(
             primarySwatch: Colors.amber,
+            accentColor: Colors.amberAccent,
             textTheme: TextTheme(
                 subtitle1: TextStyle(
                     color: Colors.black,
@@ -37,7 +43,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final titleContoller = TextEditingController();
-
   final amountContoller = TextEditingController();
 
   void _startAddNewTransaction(BuildContext ctx) {
@@ -54,86 +59,79 @@ class _HomePageState extends State<HomePage> {
 
   final List<Transaction> _userTransactions = [
     Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
+        id: 't0', title: 'OnePlus 8T', amount: 672.99, date: DateTime.now()),
     Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
+        id: 't1',
+        title: 'Apple iPad Pro',
+        amount: 999.99,
+        date: DateTime.now()),
     Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now()),
-    Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
-    Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
-    Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now()),
-    Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
-    Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
-    Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now()),
-    Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
-    Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
-    Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now()),
-    Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
-    Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
-    Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now()),
-    Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
-    Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
-    Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now()),
-    Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
-    Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
-    Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now()),
-    Transaction(
-        id: 't1', title: 'OnePlus 8T', amount: 72.99, date: DateTime.now()),
-    Transaction(
-        id: 't2', title: 'Apple iPad Pro', amount: 99.99, date: DateTime.now()),
-    Transaction(
-        id: 't3', title: 'Google Pixel 5', amount: 82.99, date: DateTime.now())
+        id: 't2',
+        title: 'Google Pixel 5',
+        amount: 782.99,
+        date: DateTime.now()),
   ];
 
-  void _addNewTransaction({String title, double amount}) {
+  void _addNewTransaction(
+      {@required String title,
+      @required double amount,
+      @required DateTime date}) {
     final newTransaction = Transaction(
         id: 't${_userTransactions.length}',
         title: title,
         amount: amount,
-        date: DateTime.now());
+        date: date);
     setState(() {
       _userTransactions.add(newTransaction);
     });
   }
 
+  void _deleteTransaction(id) {
+    setState(() {
+      _userTransactions.removeWhere((element) => element.id == id);
+    });
+  }
+
+  List<Transaction> get _recentTransactions {
+    return _userTransactions
+        .where((element) =>
+            element.date.isAfter(DateTime.now().subtract(Duration(days: 7))))
+        .toList();
+  }
+
+  double get totalSpendings {
+    return _recentTransactions.fold(
+        0.0, (previousValue, element) => previousValue + element.amount);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'My Expenses',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white),
-        ),
-        elevation: 5,
-        centerTitle: true,
-        backgroundColor: Colors.black,
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => _startAddNewTransaction(context),
-            color: Theme.of(context).iconTheme.color,
-          ),
-        ],
+    final mediaQeury = MediaQuery.of(context);
+    final isLanscape = mediaQeury.orientation == Orientation.landscape;
+
+    final appBar = AppBar(
+      title: Text(
+        'My Expenses',
+        textAlign: TextAlign.center,
+        style: TextStyle(color: Colors.white),
       ),
+      elevation: 5,
+      centerTitle: true,
+      backgroundColor: Colors.black,
+      actions: <Widget>[
+        IconButton(
+          icon: Icon(Icons.add),
+          onPressed: () => _startAddNewTransaction(context),
+          color: Theme.of(context).iconTheme.color,
+        ),
+      ],
+    );
+
+    var availableSpace = mediaQeury.size.height -
+        appBar.preferredSize.height -
+        mediaQeury.padding.top;
+    return Scaffold(
+      appBar: appBar,
       floatingActionButton: FloatingActionButton(
         onPressed: () => _startAddNewTransaction(context),
         child: Icon(
@@ -146,27 +144,18 @@ class _HomePageState extends State<HomePage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisAlignment: MainAxisAlignment.start,
           children: <Widget>[
-            Card(
-                elevation: 3,
-                margin: EdgeInsets.symmetric(horizontal: 4, vertical: 15),
-                child: Container(
-                    padding: EdgeInsets.all(15),
-                    child: Column(
-                      children: <Widget>[
-                        Text(
-                          'Charts!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                      ],
-                    ))),
-            Column(
-              children: <Widget>[
-                TransactionList(
+            Container(
+              height: isLanscape ? availableSpace * 0.5 : availableSpace * 0.25,
+              child: Chart(
+                recentTransactions: _userTransactions,
+                totalSpendings: totalSpendings,
+              ),
+            ),
+            Container(
+              height: isLanscape ? availableSpace * 0.5 : availableSpace * 0.75,
+              child: TransactionList(
                   transactions: _userTransactions,
-                )
-              ],
+                  deleteTransatcion: _deleteTransaction),
             )
           ],
         ),
